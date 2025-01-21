@@ -1,0 +1,45 @@
+#!/bin/bash
+
+cd /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution
+tmpDir=$(mkdir -p "/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/tmp.46887cb4" && echo "/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/tmp.46887cb4")
+chmod 777 "$tmpDir"
+export _JAVA_OPTIONS=-Djava.io.tmpdir="$tmpDir"
+export TMPDIR="$tmpDir"
+export HOME="$HOME"
+(
+cd /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution
+
+)
+outf518f2be="${tmpDir}/out.$$" errf518f2be="${tmpDir}/err.$$"
+mkfifo "$outf518f2be" "$errf518f2be"
+trap 'rm "$outf518f2be" "$errf518f2be"' EXIT
+touch '/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/stdout' '/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/stderr'
+tee '/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/stdout' < "$outf518f2be" &
+tee '/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/stderr' < "$errf518f2be" >&2 &
+(
+cd /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution
+
+
+export TMPDIR=tmp
+set -euxo pipefail
+
+echo $PWD
+ls .
+
+Rscript /opt/pmotools-python/PGEcore/scripts/count_samples_by_coi/count_samples_by_coi.R \
+    --coi_calls /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/inputs/-965431840/example_coi_table.tsv \
+    --output "sample_count_per_coi.tsv"
+)  > "$outf518f2be" 2> "$errf518f2be"
+echo $? > /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/rc.tmp
+(
+# add a .file in every empty directory to facilitate directory delocalization on the cloud
+cd /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution
+find . -type d -exec sh -c '[ -z "$(ls -A '"'"'{}'"'"')" ] && touch '"'"'{}'"'"'/.file' \;
+)
+(
+cd /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution
+sync
+
+
+)
+mv /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/rc.tmp /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/rc

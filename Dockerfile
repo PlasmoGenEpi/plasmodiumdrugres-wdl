@@ -69,3 +69,5 @@ RUN Rscript -e 'BiocManager::install("pwalign", ask = FALSE)'
 
 # update path
 ENV PATH="/opt/pmotools-python/scripts:$PATH"
+
+COPY bin/PGEcore PGEcore 

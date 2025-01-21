@@ -1,0 +1,20 @@
+#!/bin/bash
+# make sure there is no preexisting Docker CID file
+rm -f /Users/jar4142/Desktop/plasmodiumdrugres-wdl/tests/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/docker_cid
+# run as in the original configuration without --rm flag (will remove later)
+docker run \
+  --cidfile /Users/jar4142/Desktop/plasmodiumdrugres-wdl/tests/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/docker_cid \
+  -i \
+   \
+  --entrypoint /bin/bash \
+  -v /Users/jar4142/Desktop/plasmodiumdrugres-wdl/tests/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi:/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi:delegated \
+  jorgeamaya/pgecore@sha256:01edd3e73776430bf9195427924b35bb2f7ee5a1baee1897340a20686e868c0e /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/script
+
+# get the return code (working even if the container was detached)
+rc=$(docker wait `cat /Users/jar4142/Desktop/plasmodiumdrugres-wdl/tests/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/docker_cid`)
+
+# remove the container after waiting
+docker rm `cat /Users/jar4142/Desktop/plasmodiumdrugres-wdl/tests/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/docker_cid`
+
+# return exit code
+exit $rc

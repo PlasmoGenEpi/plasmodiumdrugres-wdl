@@ -6,14 +6,20 @@ task count_samples_by_coi {
     }
 
     command <<<
-        Rscript bin/PGEcore/scripts/count_samples_by_coi/count_samples_by_coi.R \
+        export TMPDIR=tmp
+        set -euxo pipefail
+
+        echo $PWD
+        ls .
+
+        Rscript /opt/pmotools-python/PGEcore/scripts/count_samples_by_coi/count_samples_by_coi.R \
             --coi_calls ~{coi_calls} \
             --output "sample_count_per_coi.tsv"
     >>>
 
     output {
         File sample_count_per_coi = "sample_count_per_coi.tsv"
-    
+    } 
 
     runtime {
         cpu: 1
@@ -22,6 +28,6 @@ task count_samples_by_coi {
         bootDiskSizeGb: 10
         preemptible: 3 
         maxRetries: 1
-        docker: 'jorgeamaya/asvfilters:v_1_0_0'
+        docker: 'jorgeamaya/pgecore:v_0_0_1'
     }
 }
