@@ -10,29 +10,27 @@ This repository provides guidance and examples for converting **Nextflow** workf
 Refer to the official WDL specification for detailed syntax and structure:
 - [WDL Specification v1.2.0](https://github.com/openwdl/wdl/blob/release-1.2.0/SPEC.md)
 
----
+### Documenting Tasks
 
-## Documenting Tasks
-
-When translating Nextflow help messages into WDL metadata:
+How to add help messages into WDL metadata:
 - See the [Metadata Sections](https://github.com/openwdl/wdl/blob/release-1.2.0/SPEC.md#metadata-sections).
 
-### Examples:
+#### Examples:
 - Workflow metadata: [Broad Institute Workflow Metadata Example](https://github.com/broadinstitute/viral-pipelines/blob/master/pipes/WDL/workflows/align_and_count.wdl)
 - Task parameters metadata: [Task Metadata Example](https://github.com/broadinstitute/viral-pipelines/blob/master/pipes/WDL/tasks/tasks_16S_amplicon.wdl)
 
 ---
 
-## Creating the Workflow and Tasks
+### Creating the Workflow and Tasks
 
 - **Nextflow's `main.nf`** corresponds to a **WDL Workflow**.
 - **Nextflow Functions, Workflows, and Modules** are converted into WDL **Tasks** and **Subworkflows**.
 
-### Defining Workflows:
+#### Defining Workflows:
 - [Workflow Definition](https://github.com/openwdl/wdl/blob/release-1.2.0/SPEC.md#workflow-definition)
 - [Subworkflow Definition](https://github.com/openwdl/wdl/blob/release-1.2.0/SPEC.md#workflow-hints)
 
-### Defining Tasks:
+#### Defining Tasks:
 - [Task Definition](https://github.com/openwdl/wdl/blob/release-1.2.0/SPEC.md#task-definition)
 
 ---
@@ -56,7 +54,6 @@ When translating Nextflow help messages into WDL metadata:
   ```
 - For tasks sharing a Docker container, create a shared `DOCKER/` folder.
 
-### Importing Tasks into Workflows:
 - Import tasks using `import`:
   ```wdl
   import "../Tasks/Prepare_Reference_Files/prepare_reference_files.wdl" as prepare_reference_files_t
@@ -66,7 +63,7 @@ When translating Nextflow help messages into WDL metadata:
   call prepare_reference_files_t.prepare_reference_files as t_001_prepare_reference_files { ... }
   ```
 
-### Examples:
+#### Examples:
 - Workflow example: [Broad Institute WDL Workflow](https://github.com/broadinstitute/malaria/blob/main/WDL/Workflows/wdl_ampseq.wdl)
 - Task example: [Broad Institute WDL Task](https://github.com/broadinstitute/malaria/blob/main/WDL/Tasks/Amplicon_Denoising/amplicon_denoising.wdl)
 
@@ -123,7 +120,7 @@ RUN chmod +x /app/create_primer_files.sh
    - [Cromwell Installation Guide](https://cromwell.readthedocs.io/en/stable/)
 
 2. **Facilitate Testing**:
-   Add these lines to WDL tasks to support chaining:
+   Add these lines to WDL tasks to support local testing:
    ```wdl
    command <<<
        export TMPDIR=tmp
@@ -133,7 +130,7 @@ RUN chmod +x /app/create_primer_files.sh
    ```
 
 3. **Validate WDL Files**:
-   Use `womtool`:
+   Use `womtool` to validate WDL files before running them:
    ```bash
    womtool validate main_workflow.wdl
    ```
@@ -149,4 +146,3 @@ RUN chmod +x /app/create_primer_files.sh
 
 ---
 
-For more details, refer to the WDL specification and linked resources. Contributions and issues are welcome!
