@@ -9,16 +9,13 @@ task count_samples_by_coi {
         export TMPDIR=tmp
         set -euxo pipefail
 
-        echo $PWD
-        ls .
-
         Rscript /opt/pmotools-python/PGEcore/scripts/count_samples_by_coi/count_samples_by_coi.R \
             --coi_calls ~{coi_calls} \
             --output "sample_count_per_coi.tsv"
     >>>
 
     output {
-        File sample_count_per_coi = "sample_count_per_coi.tsv"
+        File count_samples_by_coi_output = "sample_count_per_coi.tsv"
     } 
 
     runtime {
