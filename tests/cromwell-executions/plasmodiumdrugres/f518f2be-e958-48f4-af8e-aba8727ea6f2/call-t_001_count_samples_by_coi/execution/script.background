@@ -1,3 +1,0 @@
-#!/bin/bash
-'/bin/bash' '/Users/jar4142/Desktop/plasmodiumdrugres-wdl/tests/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/script.submit' < /dev/null || { rc=$?; if [ "$rc" -gt "128" ]; then echo $rc; else echo -1; fi } > /Users/jar4142/Desktop/plasmodiumdrugres-wdl/tests/cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution/rc &
-echo $!

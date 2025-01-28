@@ -17,12 +17,12 @@ task multilocibiallelicmodel_wrapper {
     >>>
 
     output {
-        File multilocibiallelicmodel_wrapper_output = "MLBM_summary.tsv"
+        File multilocibiallelicmodel_wrapper_o = "MLBM_summary.tsv"
     }
 
     runtime {
         cpu: 1
-        memory: "40 GiB"
+        memory: "10 GiB"
         disks: "local-disk 10 HDD"
         bootDiskSizeGb: 10
         preemptible: 3

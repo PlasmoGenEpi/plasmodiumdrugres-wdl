@@ -22,9 +22,9 @@ task translate_loci_of_interest {
     >>>
 
     output {
-        File translate_loci_of_interest_output_amino = "~{output_directory}/amino_acid_calls.tsv.gz"
-	File translate_loci_of_interest_output_collapsed = "~{output_directory}/collapsed_amino_acid_calls.tsv.gz"
-        File translate_loci_of_interest_output_sample_info = "~{output_directory}/loci_covered_by_target_samples_info.tsv"
+        File translate_loci_of_interest_output_amino_o = "~{output_directory}/amino_acid_calls.tsv.gz"
+	File translate_loci_of_interest_output_collapsed_o = "~{output_directory}/collapsed_amino_acid_calls.tsv.gz"
+        File translate_loci_of_interest_output_sample_info_o = "~{output_directory}/loci_covered_by_target_samples_info.tsv"
     }
 
     runtime {

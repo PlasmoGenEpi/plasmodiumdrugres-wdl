@@ -16,7 +16,7 @@ task estimate_allele_prevalence_naive {
     >>>
 
     output {
-        File estimate_allele_prevalence_output = "~{out}"
+        File allele_prevalence_o = "~{out}"
     }
 
     runtime {

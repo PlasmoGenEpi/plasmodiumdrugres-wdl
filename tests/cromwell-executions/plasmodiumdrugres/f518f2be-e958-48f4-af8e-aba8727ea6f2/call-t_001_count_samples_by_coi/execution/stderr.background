@@ -1,4 +1,0 @@
-WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
-+ echo /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/execution
-+ ls .
-+ Rscript /opt/pmotools-python/PGEcore/scripts/count_samples_by_coi/count_samples_by_coi.R --coi_calls /cromwell-executions/plasmodiumdrugres/f518f2be-e958-48f4-af8e-aba8727ea6f2/call-t_001_count_samples_by_coi/inputs/-965431840/example_coi_table.tsv --output sample_count_per_coi.tsv

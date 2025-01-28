@@ -1,0 +1,6 @@
+{
+  "plasmodiumdrugres.allele_table": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example2_allele_table.tsv",
+  "plasmodiumdrugres.ref_bed": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_PMO_insert_locs_of_panel.bed",
+  "plasmodiumdrugres.loci_of_interest": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_principal_resistance_marker_info_table.bed",
+  "plasmodiumdrugres.loci_group_table": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_loci_groups.tsv"
+}
