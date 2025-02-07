@@ -1,0 +1,6 @@
+version: 1.2
+
+workflows:
+  - name: plasmodiumdrugres
+    subclass: WDL
+    primaryDescriptorPath: /WDL/Workflows/plasmodiumdrugres.wdl
