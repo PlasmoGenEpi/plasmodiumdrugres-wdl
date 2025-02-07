@@ -1,0 +1,15 @@
+{
+  "plasmodiumdrugres.coi_calls": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_coi_table.tsv",
+  "plasmodiumdrugres.aa_calls": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example2_amino_acid_calls.tsv",
+  "plasmodiumdrugres.loci_group_table": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_loci_groups.tsv",
+  "plasmodiumdrugres.allele_table": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example2_allele_table.tsv",
+  "plasmodiumdrugres.ref_bed": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_PMO_insert_locs_of_panel.bed",
+  "plasmodiumdrugres.snps_of_interest": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/MAD4HATTER_coveredSnps.bed",
+  "plasmodiumdrugres.mlaf_input": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_mlaf.tsv",
+  "plasmodiumdrugres.loci_of_interest": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_principal_resistance_marker_info_table.bed",
+  "plasmodiumdrugres.fasta": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_PMO_insert_locs_of_panel_refseqs.fasta",
+  "plasmodiumdrugres.genome": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/PlasmoDB-59_Pfalciparum3D7_Genome.fasta",
+  "plasmodiumdrugres.allele_table_dcifer": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_allele_table.tsv",
+  "plasmodiumdrugres.coi_table": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_coi_table.tsv",
+  "plasmodiumdrugres.allele_freq_table": "/Users/jar4142/Desktop/plasmodiumdrugres-wdl/bin/PGEcore/data/example_slaf_mhap.tsv"
+}
