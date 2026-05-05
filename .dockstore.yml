@@ -4,3 +4,6 @@ workflows:
   - name: plasmodiumdrugres
     subclass: WDL
     primaryDescriptorPath: /WDL/Workflows/plasmodiumdrugres.wdl
+    readMePath: /PLASMODIUMDRUGRES_INTERFACE.md
+    testParameterFiles:
+      - /test.json

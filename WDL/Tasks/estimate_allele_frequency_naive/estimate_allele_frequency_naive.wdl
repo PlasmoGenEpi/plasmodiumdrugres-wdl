@@ -2,23 +2,25 @@ version 1.0
 
 task estimate_allele_frequency_naive {
     input {
+        String group_name
         File aa_calls
+        String docker_image
         String estimate_allele_frequency_naive_method = "read_count_prop" # Options: "read_count_prop" or "presence_absence"
-        String out = "allele_freqs.tsv"
+        String out = "~{group_name}.aa_slaf.tsv"
     }
 
     command <<<
         export TMPDIR=tmp
         set -euxo pipefail
 
-        Rscript /opt/pmotools-python/PGEcore/scripts/estimate_allele_frequency_naive/estimate_allele_frequency_naive.R \
+        Rscript /opt/plasmodiumdrugres/bin/PGEcore/scripts/estimate_allele_frequency_naive/estimate_allele_frequency_naive.R \
             --aa_calls ~{aa_calls} \
             --method ~{estimate_allele_frequency_naive_method} \
             --output ~{out}
     >>>
 
     output {
-        File estimate_allele_frequency_naive_output = "~{out}"
+        File slaf = "~{out}"
     }
 
     runtime {
@@ -28,6 +30,6 @@ task estimate_allele_frequency_naive {
         bootDiskSizeGb: 10
         preemptible: 3
         maxRetries: 1
-        docker: 'jorgeamaya/pgecore:v_0_0_1'
+        docker: docker_image
     }
 }

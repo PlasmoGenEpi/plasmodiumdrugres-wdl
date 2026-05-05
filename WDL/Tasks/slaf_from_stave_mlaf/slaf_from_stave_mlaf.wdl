@@ -2,21 +2,23 @@ version 1.0
 
 task slaf_from_stave_mlaf {
     input {
+        String group_name
         File mlaf_input
-        String out = "single_locus_allele_frequencies.tsv"
+        String docker_image
+        String out = "~{group_name}.aa_sl_from_ml.tsv"
     }
 
     command <<<
         export TMPDIR=tmp
         set -euxo pipefail
 
-        Rscript /opt/pmotools-python/PGEcore/scripts/slaf_from_stave_mlaf/slaf_from_stave_mlaf.R \
+        Rscript /opt/plasmodiumdrugres/bin/PGEcore/scripts/slaf_from_stave_mlaf/slaf_from_stave_mlaf.R \
             --mlaf_input ~{mlaf_input} \
             --output ~{out}
     >>>
 
     output {
-        File slaf_from_stave_mlaf_output = "~{out}"
+        File sl_from_ml = "~{out}"
     }
 
     runtime {
@@ -26,6 +28,6 @@ task slaf_from_stave_mlaf {
         bootDiskSizeGb: 10
         preemptible: 3
         maxRetries: 1
-        docker: 'jorgeamaya/pgecore:v_0_0_1'
+        docker: docker_image
     }
 }

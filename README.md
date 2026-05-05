@@ -1,4 +1,12 @@
 
+# plasmodiumdrugres (WDL for Terra)
+
+Pipeline interface and parity target:
+
+- `PLASMODIUMDRUGRES_INTERFACE.md`
+
+---
+
 # Nextflow-to-WDL Conversion Guide
 
 This repository provides guidance and examples for converting **Nextflow** workflows to **WDL** (Workflow Description Language) workflows. Below are detailed notes, examples, and best practices for performing the conversion.
