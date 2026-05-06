@@ -8,6 +8,8 @@ import "../Subworkflows/estimate_mlaf.wdl" as estimate_mlaf_wf
 import "../Subworkflows/estimate_slaf.wdl" as estimate_slaf_wf
 import "../Subworkflows/merge_and_concat.wdl" as merge_and_concat_wf
 import "../Tasks/split_table_by_population_map/split_table_by_population_map.wdl" as split_table_by_population_map_t
+import "../Tasks/move_outputs/move_outputs.wdl" as move_outputs_t
+import "../Tasks/utils/fail.wdl" as fail_t
 
 workflow plasmodiumdrugres {
    input {
@@ -37,6 +39,20 @@ workflow plasmodiumdrugres {
 
      String outdir = "output"
      String docker_image = "plasmogenepi/plasmodiumdrugres:wdl"
+
+     # Optional: Terra workspace bucket id (e.g. fc-… from gs://fc-…/…). Use when Cromwell
+     # localizes File paths and auto-detection from gs:// no longer applies.
+     String? workspace_bucket
+   }
+
+   String outdir_sanitized = sub(outdir, "^[A-Za-z0-9_-]+$", "MATCH")
+   Boolean outdir_valid = outdir_sanitized == "MATCH"
+
+   if (!outdir_valid) {
+     call fail_t.fail as outdir_check_fail {
+       input:
+         message = "ERROR: outdir may only contain letters, numbers, dashes, and underscores."
+     }
    }
 
    call pipeline_initialisation_wf.pipeline_initialisation as t_001_init {
@@ -150,18 +166,33 @@ workflow plasmodiumdrugres {
        docker_image = docker_image
    }
 
+   String ml_summary_path_str = t_merge_concat.ml_summary
+   String inferred_fc_bucket = sub(ml_summary_path_str, "^gs://(fc-[^/]+)/.*$", "$1")
+   Boolean fc_inferred_from_gs_uri = inferred_fc_bucket != ml_summary_path_str
+   Boolean move_use_gcs = defined(workspace_bucket) || fc_inferred_from_gs_uri
+   String move_fc_bucket = if defined(workspace_bucket) then select_first([workspace_bucket]) else inferred_fc_bucket
+
+   call move_outputs_t.move_outputs as t_move_outputs {
+     input:
+       ml_summary = t_merge_concat.ml_summary,
+       sl_summary = t_merge_concat.sl_summary,
+       sl_from_ml_summary = t_merge_concat.sl_from_ml_summary,
+       amino_acid_calls = t_002_translate_loci.translate_loci_of_interest_output_amino_o,
+       collapsed_amino_acid_calls = t_002_translate_loci.translate_loci_of_interest_output_collapsed_o,
+       loci_covered_by_target_samples_info = t_002_translate_loci.translate_loci_of_interest_output_sample_info_o,
+       loci_of_interest_for_target_for_microhap = t_002_translate_loci.translate_loci_of_interest_output_microhap_map_o,
+       output_directory = outdir,
+       use_gcs_staging = move_use_gcs,
+       fc_workspace_bucket = move_fc_bucket
+   }
+
    output {
-     File translated_loci_amino_acid_calls = t_002_translate_loci.translate_loci_of_interest_output_amino_o
-     File translated_loci_collapsed_amino_acid_calls = t_002_translate_loci.translate_loci_of_interest_output_collapsed_o
-     File translated_loci_sample_info = t_002_translate_loci.translate_loci_of_interest_output_sample_info_o
-     File translated_loci_microhap_map = t_002_translate_loci.translate_loci_of_interest_output_microhap_map_o
-
-     Array[File] per_pop_sl_summary = t_merge_concat.per_pop_sl_summary
-     Array[File] per_pop_ml_summary = t_merge_concat.per_pop_ml_summary
-     Array[File] per_pop_sl_from_ml_summary = t_merge_concat.per_pop_sl_from_ml_summary
-
-     File sl_summary = t_merge_concat.sl_summary
-     File ml_summary = t_merge_concat.ml_summary
-     File sl_from_ml_summary = t_merge_concat.sl_from_ml_summary
+     String ml_summary = t_move_outputs.ml_summary_uri
+     String sl_summary = t_move_outputs.sl_summary_uri
+     String sl_from_ml_summary = t_move_outputs.sl_from_ml_summary_uri
+     String amino_acid_calls = t_move_outputs.amino_acid_calls_uri
+     String collapsed_amino_acid_calls = t_move_outputs.collapsed_amino_acid_calls_uri
+     String loci_covered_by_target_samples_info = t_move_outputs.loci_covered_by_target_samples_info_uri
+     String loci_of_interest_for_target_for_microhap = t_move_outputs.loci_of_interest_for_target_for_microhap_uri
    }
 }

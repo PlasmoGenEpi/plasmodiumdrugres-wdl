@@ -51,13 +51,7 @@ See `PLASMODIUMDRUGRES_INTERFACE.md` for the input contract. Key rules:
 
 ### 3) Outputs
 
-Terra will collect outputs from the workflow outputs:
-
-- Final deliverables:
-  - `sl_summary.tsv`
-  - `ml_summary.tsv`
-  - `sl_from_ml_summary.tsv`
-- Plus translated loci outputs under `translated_loci/*` (exposed as workflow outputs).
+The workflow stages seven deliverables into **`gs://<workspace bucket>/<outdir>/<timestamp>/`** (see `move_outputs` / `mad4hatter-wdl` pattern) and exposes each as a **`String` `gs://` URI** in the Job Manager: `ml_summary`, `sl_summary`, `sl_from_ml_summary`, `amino_acid_calls`, `collapsed_amino_acid_calls`, `loci_covered_by_target_samples_info`, `loci_of_interest_for_target_for_microhap`. Set **`outdir`** in inputs (default `output`; only letters, numbers, `_`, `-`).
 
 ### 4) Debugging
 

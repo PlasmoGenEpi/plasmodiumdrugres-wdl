@@ -81,27 +81,21 @@ To mimic Nextflow’s `outdir` organization (even though Terra does not require 
 
 ## Outputs
 
-### Final deliverables (top-level)
+On **Terra**, the workflow exposes exactly **seven** outputs as **`String` URIs** from the staging step (same idea as `mad4hatter-wdl` `move_outputs`). When Cromwell sees a `gs://fc-…/…` path for the merged `ml_summary`, files are copied with **`gcloud`** to **`gs://fc-…/<outdir>/<timestamp>/`** using their original basenames. On **local Cromwell** (paths like `/Users/…` or `tests/input/…`), the same task uses **`cp`** into **`<execution_dir>/<outdir>/<timestamp>/`** and outputs absolute local paths instead.
 
-These match the Nextflow `CONCAT_TABLES` outputs:
+Optional input **`workspace_bucket`** (`String?`): set to the workspace bucket id (e.g. `fc-15e572f9-33a3-4a1e-8534-099df773bfbf`, no `gs://` prefix) if your backend localizes files before WDL evaluates paths and automatic `gs://fc-…` detection fails—then GCS staging is forced.
 
-- **`sl_summary.tsv`**
-- **`ml_summary.tsv`**
-- **`sl_from_ml_summary.tsv`**
+`outdir` must be alphanumeric plus `_` or `-` only (validated at workflow start).
 
-### Translated loci outputs
+Workflow output names (each value is a `gs://…` path to the file):
 
-These match the Nextflow `TRANSLATE_LOCI_OF_INTEREST` outputs (under `translated_loci/`):
+- **`ml_summary`** → `ml_summary.tsv`
+- **`sl_summary`** → `sl_summary.tsv`
+- **`sl_from_ml_summary`** → `sl_from_ml_summary.tsv`
+- **`amino_acid_calls`** → `amino_acid_calls.tsv.gz`
+- **`collapsed_amino_acid_calls`** → `collapsed_amino_acid_calls.tsv.gz`
+- **`loci_covered_by_target_samples_info`** → `loci_covered_by_target_samples_info.tsv`
+- **`loci_of_interest_for_target_for_microhap`** → `loci_of_interest_for_target_for_microhap.tsv.gz`
 
-- **`translated_loci/collapsed_amino_acid_calls.tsv.gz`**
-- **`translated_loci/amino_acid_calls.tsv.gz`**
-- **`translated_loci/loci_covered_by_target_samples_info.tsv`**
-- **`translated_loci/loci_of_interest_for_target_for_microhap.tsv.gz`**
-
-### Per-population intermediate deliverables (optional)
-
-When population splitting is enabled, the pipeline produces per-population summaries and split tables. The WDL may optionally expose these as workflow outputs for debugging/inspection:
-
-- `<pop>.sl_summary.tsv`, `<pop>.ml_summary.tsv`, `<pop>.sl_from_ml_summary.tsv`
-- Per-pop split tables (`*.collapsed_amino_acid_calls.tsv.gz`, `*.allele_table.tsv.gz`) and `unmapped_*` text files.
+Per-population merge artifacts and intermediate `translated_loci/` paths are still computed inside the run but are **not** listed as workflow outputs; use the staged URIs above for downloads and downstream tooling.
 
