@@ -2,9 +2,11 @@ version 1.0
 
 task idm_wrapper {
     input {
+        String group_name
         File aa_calls
+        String docker_image
         String model = "IDM"
-        String slaf_output = "out_slaf.tsv"
+        String slaf_output = "~{group_name}.aa_slaf.tsv"
         Float eps_initial = 0.1
         Float lambda_initial = 0.1
     }
@@ -13,7 +15,7 @@ task idm_wrapper {
         export TMPDIR=tmp
         set -euxo pipefail
 
-        Rscript /opt/pmotools-python/PGEcore/scripts/IDM_wrapper/IDM_wrapper.R \
+        Rscript /opt/plasmodiumdrugres/bin/PGEcore/scripts/IDM_wrapper/IDM_wrapper.R \
             --aa_calls_input ~{aa_calls} \
             --model ~{model} \
             --slaf_output ~{slaf_output} \
@@ -22,7 +24,7 @@ task idm_wrapper {
     >>>
 
     output {
-        File idm_wrapper_o = "~{slaf_output}"
+        File slaf = "~{slaf_output}"
     }
 
     runtime {
@@ -32,6 +34,6 @@ task idm_wrapper {
         bootDiskSizeGb: 10
         preemptible: 3 
         maxRetries: 1
-        docker: 'jorgeamaya/pgecore:v_0_0_1'
+        docker: docker_image
     }
 }

@@ -13,6 +13,8 @@ task pileup_specific_snps {
         export TMPDIR=tmp
         set -euxo pipefail
 
+        mkdir -p "~{output_directory}"
+
         Rscript /opt/pmotools-python/PGEcore/scripts/pileup_specific_snps/pileup_specific_snps.R \
             --allele_table ~{allele_table} \
             --ref_bed ~{ref_bed} \

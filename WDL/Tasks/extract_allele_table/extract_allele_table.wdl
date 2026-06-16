@@ -2,20 +2,19 @@ version 1.0
 
 task extract_allele_table {
     input {
-        File? pmo
-        String bioinfoid = "ReducedMAD4HATTERSim-SeekDeep"
+        File pmo
+        String docker_image
     }
 
     command <<<
         export TMPDIR=tmp
         set -euxo pipefail
 
-        pmotools-runner.py extract_allele_table \
+        pmotools-python extract_allele_table \
             --file ~{pmo} \
-            --bioid ~{bioinfoid} \
             --representative_haps_fields "seq" \
-            --microhap_fields "read_count" \
-            --default_base_col_names specimen_id,target_id,allele \
+            --microhap_fields "reads" \
+            --default_base_col_names specimen_name,target_name,allele \
             --output allele_table
     >>>
 
@@ -30,6 +29,6 @@ task extract_allele_table {
         bootDiskSizeGb: 10
         preemptible: 3
         maxRetries: 1
-        docker: 'jorgeamaya/pgecore:v_0_0_1'
+        docker: docker_image
     }
 }

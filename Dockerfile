@@ -1,108 +1,80 @@
 FROM ubuntu:24.04
-LABEL authors="pge"
+
+LABEL org.opencontainers.image.title="plasmogenepi/plasmodiumdrugres"
+LABEL org.opencontainers.image.description="WDL/Terra runtime for plasmodiumdrugres pipeline"
 
 ARG DEBIAN_FRONTEND="noninteractive"
-ARG SHELL="/bin/bash"
 ARG LANG="en_US.UTF-8"
 ARG LANGUAGE="en_US.UTF-8"
 ARG LC_ALL="en_US.UTF-8"
 ARG CPU_COUNT=5
 ARG TIME_ZONE=Etc/UTC
 
-RUN ulimit -n 10000
+# Pin pipeline and pmotools sources for reproducibility
+ARG PLASMODIUMDRUGRES_GIT_URL="https://github.com/PlasmoGenEpi/plasmodiumdrugres.git"
+ARG PLASMODIUMDRUGRES_REF="main"
+ARG PMOTOOLS_GIT_URL="https://github.com/PlasmoGenEpi/pmotools-python.git"
+ARG PMOTOOLS_REF="develop"
 
-# install wget for getting pubkey
-RUN apt-get update
-RUN apt-get -yq dist-upgrade wget
+RUN apt-get update && \
+    apt-get -yq dist-upgrade && \
+    apt-get install -yq --no-install-recommends \
+      ca-certificates curl wget git locales tzdata \
+      build-essential autotools-dev autoconf libtool automake file \
+      openssh-client \
+      python3 python3-dev python3-pip \
+      libssl-dev libcurl4-gnutls-dev \
+      xz-utils zlib1g-dev libbz2-dev liblzma5 liblzma-dev \
+      libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev \
+      libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev \
+      libmpfr-dev libgmp3-dev \
+      muscle && \
+    rm -rf /var/lib/apt/lists/*
 
-# add packages source to install r 4.4 which is needed for BiocManager 3.19 which is needed pwalign
-RUN echo "deb https://cloud.r-project.org/bin/linux/ubuntu noble-cran40/" > /etc/apt/sources.list.d/cran.list
-RUN echo "deb-src https://cloud.r-project.org/bin/linux/ubuntu noble-cran40/" >> /etc/apt/sources.list.d/cran.list
-RUN wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | tee -a /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
+# Add CRAN for R on Ubuntu noble (noble-cran40 may track newest compatible R, e.g. 4.5.x)
+RUN echo "deb https://cloud.r-project.org/bin/linux/ubuntu noble-cran40/" > /etc/apt/sources.list.d/cran.list && \
+    echo "deb-src https://cloud.r-project.org/bin/linux/ubuntu noble-cran40/" >> /etc/apt/sources.list.d/cran.list && \
+    wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc | tee /etc/apt/trusted.gpg.d/cran_ubuntu_key.asc >/dev/null
 
-# install basics
-RUN apt-get update
-RUN apt-get -yq dist-upgrade
-RUN apt-get install -yq --no-install-recommends autotools-dev autoconf libtool automake build-essential curl wget file git locales libssl-dev libcurl4-gnutls-dev ca-certificates xz-utils zlib1g-dev libbz2-dev liblzma5 liblzma-doc liblzma-dev openssh-client python3-dev python3-pip libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libmpfr-dev libgmp3-dev
+RUN apt-get update && \
+    apt-get install -yq --no-install-recommends r-base r-base-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-# install common bio tools
-RUN apt-get install -yq --no-install-recommends muscle r-base r-base-dev
+# Locale + timezone
+RUN echo "$LANG UTF-8" >> /etc/locale.gen && locale-gen $LANG && \
+    ln -snf /usr/share/zoneinfo/$TIME_ZONE /etc/localtime && echo $TIME_ZONE > /etc/timezone
 
-# set environment locale
-RUN echo "$LANG UTF-8" >> /etc/locale.gen
-RUN echo "LANG=$LANG" > /etc/locale.conf
-RUN echo "LC_ALL=$LC_ALL" >> /etc/environment
-RUN echo "LANGUAGE=$LANGUAGE" >> /etc/environment
-RUN locale-gen $LANG
-RUN update-locale LANG=$LANG
+# GitHub host key for clone
+RUN mkdir -p /root/.ssh && ssh-keyscan github.com >> /root/.ssh/known_hosts
 
-RUN DEBIAN_FRONTEND=noninteractive TZ=$TIME_ZONE apt-get -y install tzdata
-
-# add github key so can git clone from github
-RUN mkdir ~/.ssh/
-RUN ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-
-# pmotools
+# pmotools-python
 WORKDIR /opt
-RUN git clone https://github.com/PlasmoGenEpi/pmotools-python.git
-WORKDIR /opt/pmotools-python
-RUN git checkout develop
-RUN pip install --break-system-packages .
+RUN git clone "$PMOTOOLS_GIT_URL" pmotools-python && \
+    cd pmotools-python && \
+    git checkout "$PMOTOOLS_REF"
+RUN pip install --break-system-packages /opt/pmotools-python
 
-# R configuration
-RUN mkdir -p /usr/local/lib/R/etc/ /usr/lib/R/etc/
-RUN echo "options(repos = c(CRAN = 'https://cran.rstudio.com/'), download.file.method = 'libcurl', Ncpus = ${CPU_COUNT})" | tee /usr/local/lib/R/etc/Rprofile.site | tee /usr/lib/R/etc/Rprofile.site
+# R configuration + packages
+RUN mkdir -p /usr/local/lib/R/etc/ /usr/lib/R/etc/ && \
+    echo "options(repos = c(CRAN = 'https://cran.rstudio.com/'), download.file.method = 'libcurl', Ncpus = ${CPU_COUNT})" | tee /usr/local/lib/R/etc/Rprofile.site | tee /usr/lib/R/etc/Rprofile.site >/dev/null
 RUN R -e 'install.packages(c("remotes"))'
-## attempt to load libraries to make sure they installed
-RUN R -e 'library("remotes")'
-
-
-# R packages
-RUN Rscript -e "remotes::install_cran(c('tibble', 'dplyr', 'stringr', 'readr', 'optparse', 'ggplot2', 'tidyr', 'data.table', 'validate', 'openxlsx', 'Rmpfr', 'rlang', 'doParallel', 'magrittr', 'checkmate', 'pegas', 'ape', 'rngtools', 'parallelly'), Ncpus = ${CPU_COUNT})"
-
-## attempt to load libraries to make sure they installed
-RUN R -e 'library("tibble")'
-RUN R -e 'library("dplyr")'
-RUN R -e 'library("stringr")'
-RUN R -e 'library("readr")'
-RUN R -e 'library("optparse")'
-RUN R -e 'library("ggplot2")'
-RUN R -e 'library("tidyr")'
-RUN R -e 'library("data.table")'
-RUN R -e 'library("validate")'
-RUN R -e 'library("openxlsx")'
-RUN R -e 'library("Rmpfr")'
-RUN R -e 'library("rlang")'
-RUN R -e 'library("doParallel")'
-RUN R -e 'library("magrittr")'
-RUN R -e 'library("checkmate")'
-RUN R -e 'library("pegas")'
-RUN R -e 'library("ape")'
-RUN R -e 'library("rngtools")'
-RUN R -e 'library("parallelly")'
-
-
-RUN R -e "install.packages(c('dcifer', 'moire'), repos = c('https://plasmogenepi.r-universe.dev', 'https://cloud.r-project.org'))"
-#RUN R -e "remotes::install_github('mrc-ide/variantstring@1.7.0')"
+RUN Rscript -e "remotes::install_cran(c('tibble','dplyr','stringr','readr','optparse','ggplot2','tidyr','data.table','validate','openxlsx','Rmpfr','rlang','doParallel','magrittr','checkmate','pegas','ape','rngtools','parallelly'), Ncpus = ${CPU_COUNT})"
+RUN R -e "install.packages(c('dcifer','moire'), repos = c('https://plasmogenepi.r-universe.dev','https://cloud.r-project.org'))"
 RUN R -e "remotes::install_github('nickjhathaway/variantstring@develop')"
+# noble-cran40 currently ships R 4.6.x; Bioc 3.22 targets R 4.5 — BiocManager requires 3.23+ for R 4.6.
+RUN Rscript -e 'if (!require("BiocManager", quietly = TRUE)) { install.packages("BiocManager"); }; BiocManager::install(version = "3.23", ask = FALSE);'
+RUN Rscript -e 'BiocManager::install(c("Biostrings","pwalign","msa"), ask = FALSE)'
 
-## attempt to load libraries to make sure they installed
-RUN R -e 'library("dcifer")'
-RUN R -e 'library("moire")'
-RUN R -e 'library("variantstring")'
+# Pipeline scripts bundled into image (no git submodule required)
+WORKDIR /opt
+# PGEcore lives in git submodule bin/PGEcore; clone alone leaves scripts missing.
+RUN git clone "$PLASMODIUMDRUGRES_GIT_URL" plasmodiumdrugres-src && \
+    cd plasmodiumdrugres-src && \
+    git checkout "$PLASMODIUMDRUGRES_REF" && \
+    git submodule update --init --recursive
 
-# Bioconductor packages (have to install 3.19 because that's needed for pwalign)
-RUN Rscript -e 'if (!require("BiocManager", quietly = TRUE)) { install.packages("BiocManager"); }; BiocManager::install(version = "3.19", ask = FALSE);'
-RUN Rscript -e 'BiocManager::install("Biostrings", ask = FALSE)'
-RUN Rscript -e 'BiocManager::install("pwalign", ask = FALSE)'
-RUN Rscript -e 'BiocManager::install("msa", ask = FALSE)'
-## attempt to load libraries to make sure they installed
-RUN R -e 'library("Biostrings")'
-RUN R -e 'library("pwalign")'
-RUN R -e 'library("msa")'
+RUN mkdir -p /opt/plasmodiumdrugres && \
+    cp -R /opt/plasmodiumdrugres-src/bin /opt/plasmodiumdrugres/bin
 
-# update path
-ENV PATH="/opt/pmotools-python/scripts:$PATH"
+ENV PATH="/opt/pmotools-python/scripts:/opt/plasmodiumdrugres/bin:$PATH"
 
-Copy bin/PGEcore PGEcore

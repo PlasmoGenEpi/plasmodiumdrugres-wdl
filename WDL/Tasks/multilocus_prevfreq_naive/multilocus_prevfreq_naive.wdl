@@ -2,21 +2,30 @@ version 1.0
 
 task multilocus_prevfreq_naive {
     input {
+        String group_name
         File aa_calls
-        String output_path = "mlafp.tsv"
+        File loci_groups
+        String docker_image
+        String method = "wsaf_prop"
+        String mlaf_out = "~{group_name}.aa_mlaf.tsv"
+        String sl_from_ml_out = "~{group_name}.aa_sl_from_ml.tsv"
     }
 
     command <<<
         export TMPDIR=tmp
         set -euxo pipefail
 
-        Rscript /opt/pmotools-python/PGEcore/scripts/multilocus_prevfreq_naive/multilocus_prevfreq_naive.R \
-            --input_path ~{aa_calls} \
-            --output_path ~{output_path}
+        Rscript /opt/plasmodiumdrugres/bin/PGEcore/scripts/multilocus_prevfreq_naive/multilocus_prevfreq_naive.R \
+            --aa_table ~{aa_calls} \
+            --loci_groups_input ~{loci_groups} \
+            --output_path ~{mlaf_out} \
+            --recalc_single_locus_output_path ~{sl_from_ml_out} \
+            --method ~{method}
     >>>
 
     output {
-        File multilocus_prevfreq_naive_output = "~{output_path}"
+        File mlaf = "~{mlaf_out}"
+        File sl_from_ml = "~{sl_from_ml_out}"
     }
 
     runtime {
@@ -26,6 +35,6 @@ task multilocus_prevfreq_naive {
         bootDiskSizeGb: 10
         preemptible: 3
         maxRetries: 1
-        docker: 'jorgeamaya/pgecore:v_0_0_1'
+        docker: docker_image
     }
 }
