@@ -131,11 +131,20 @@ def test_unscorable_bases_are_filtered():
     spec.loader.exec_module(cat)
     assert cat.ALIGNABLE_BASES == frozenset("ACGT")
 
-    rows = ("sample_name\ttarget_name\treads\tasv\n"
-            "S1\tt1\t9\tACGTNACGT\n"      # junction N
-            "S2\tt1\t9\tACGTnnnACGT\n"    # masked lowercase
-            "S3\tt1\t9\tACGT---ACGT\n"    # gap
-            "S4\tt1\t9\tACGTACGT\n")      # clean
+    # Every IUPAC ambiguity code, in both cases, plus the characters asv_masked uses.
+    # Each of these aborts pwalign with its own "key N not in lookup table": M=3, R=5,
+    # S=6, V=7, W=9, Y=10, H=11, K=12, D=13, B=14, N=15, -=16, .=64. Verified against
+    # the plasmogenepi image, so the whitelist matches the aligner exactly -- nothing is
+    # dropped that would have aligned.
+    unscorable = list("RYSWKMBDHVN") + ["-", "."]
+    lines = ["sample_name\ttarget_name\treads\tasv"]
+    for code in unscorable:
+        lines.append(f"UP_{code}\tt1\t9\tACGT{code}ACGT")
+        lines.append(f"LO_{code}\tt1\t9\tACGT{code.lower()}ACGT")
+    lines.append("CLEAN_UPPER\tt1\t9\tACGTACGT")
+    lines.append("CLEAN_LOWER\tt1\t9\tacgtacgt")   # case alone is fine: DNAString uppercases
+    rows = "\n".join(lines) + "\n"
+    n_dropped = 2 * len(unscorable)
     with tempfile.TemporaryDirectory() as d:
         src, out = os.path.join(d, "in.tsv"), os.path.join(d, "out.tsv")
         with open(src, "w") as fh:
@@ -145,10 +154,10 @@ def test_unscorable_bases_are_filtered():
         r = subprocess.run([sys.executable, script, "--input", src, "--output", out],
                            capture_output=True, text=True)
         assert r.returncode == 0, r.stderr
-        assert "dropped 3 of 4" in r.stderr, r.stderr
+        assert f"dropped {n_dropped} of {n_dropped + 2}" in r.stderr, r.stderr
         with open(out) as fh:
             kept = [l.split("\t")[0] for l in fh.read().splitlines()[1:]]
-        assert kept == ["S4"], kept
+        assert sorted(kept) == ["CLEAN_LOWER", "CLEAN_UPPER"], kept
 
         r = subprocess.run([sys.executable, script, "--input", src, "--output", out,
                             "--strict-sequences"], capture_output=True, text=True)
