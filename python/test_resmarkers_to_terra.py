@@ -116,10 +116,51 @@ def test_converter_normalisation_feeds_the_resolver():
             "UG_TEST_G001": "UG_TEST_G001_S68"}, raw
 
 
+def test_unscorable_bases_are_filtered():
+    """convert_allele_table must not pass the aligner a base it cannot score.
+
+    Mad4Hatter emits a single N at the R1/R2 junction by design, and asv_masked also
+    carries 'n' and '-'. translate_loci_of_interest.R aligns with a baseOnly=TRUE
+    matrix, which aborts on any of them ("key 15 not in lookup table" for N, 16 for -).
+    """
+    import importlib.util, subprocess
+    here = os.path.dirname(os.path.abspath(__file__))
+    spec = importlib.util.spec_from_file_location(
+        "cat", os.path.join(here, "convert_allele_table.py"))
+    cat = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cat)
+    assert cat.ALIGNABLE_BASES == frozenset("ACGT")
+
+    rows = ("sample_name\ttarget_name\treads\tasv\n"
+            "S1\tt1\t9\tACGTNACGT\n"      # junction N
+            "S2\tt1\t9\tACGTnnnACGT\n"    # masked lowercase
+            "S3\tt1\t9\tACGT---ACGT\n"    # gap
+            "S4\tt1\t9\tACGTACGT\n")      # clean
+    with tempfile.TemporaryDirectory() as d:
+        src, out = os.path.join(d, "in.tsv"), os.path.join(d, "out.tsv")
+        with open(src, "w") as fh:
+            fh.write(rows)
+        script = os.path.join(here, "convert_allele_table.py")
+
+        r = subprocess.run([sys.executable, script, "--input", src, "--output", out],
+                           capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        assert "dropped 3 of 4" in r.stderr, r.stderr
+        with open(out) as fh:
+            kept = [l.split("\t")[0] for l in fh.read().splitlines()[1:]]
+        assert kept == ["S4"], kept
+
+        r = subprocess.run([sys.executable, script, "--input", src, "--output", out,
+                            "--strict-sequences"], capture_output=True, text=True)
+        assert r.returncode != 0, "strict mode should fail"
+        assert "cannot score" in r.stderr, r.stderr
+
+
 def main():
     test_resolve_terra_ids()
     test_resolve_across_name_shapes()
     test_converter_normalisation_feeds_the_resolver()
+    test_unscorable_bases_are_filtered()
 
     # Terra demands the row id column be named <table>_id; ops_utils raises otherwise.
     assert r.id_column_for("sample") == "sample_id"
