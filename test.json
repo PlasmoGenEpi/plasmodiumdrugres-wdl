@@ -1,6 +1,7 @@
 {
-  "plasmodiumdrugres.allele_table": "tests/input/example2_allele_table.tsv",
-  "plasmodiumdrugres.panel_info_bed": "tests/input/example_PMO_insert_locs_of_panel.bed",
+  "plasmodiumdrugres.filtered_allele_data": "tests/input/example2_filtered_allele_data.tsv",
+  "plasmodiumdrugres.amplicon_info": "tests/input/example_PMO_amplicon_info.tsv",
+  "plasmodiumdrugres.reference": "tests/input/example_PMO_insert_locs_of_panel_refseqs.fasta",
   "plasmodiumdrugres.loci_of_interest_bed": "tests/input/example_principal_resistance_marker_info_table.bed",
   "plasmodiumdrugres.loci_groups": "tests/input/example2_loci_groups.tsv",
   "plasmodiumdrugres.population_label": "pop1",

@@ -10,15 +10,16 @@ import "../Subworkflows/merge_and_concat.wdl" as merge_and_concat_wf
 import "../Tasks/split_table_by_population_map/split_table_by_population_map.wdl" as split_table_by_population_map_t
 import "../Tasks/move_outputs/move_outputs.wdl" as move_outputs_t
 import "../Tasks/utils/fail.wdl" as fail_t
+import "../Tasks/make_panel_bed/make_panel_bed.wdl" as make_panel_bed
+import "../Tasks/convert_allele_table/convert_allele_table.wdl" as convert_allele_table
+import "../Tasks/resmarkers_to_terra/resmarkers_to_terra.wdl" as resmarkers_to_terra
+import "../Tasks/get_terra_env_info/get_terra_env_info.wdl" as get_terra_env_info_t
 
 workflow plasmodiumdrugres {
    input {
      # Exactly one of these must be provided
      File? pmo
-     File? allele_table
-
-     # Required for translation and for allele_table mode
-     File? panel_info_bed
+     File filtered_allele_data
 
      File loci_of_interest_bed
      File loci_groups
@@ -41,8 +42,21 @@ workflow plasmodiumdrugres {
      String docker_image = "plasmogenepi/plasmodiumdrugres:wdl"
 
      # Optional: Terra workspace bucket id (e.g. fc-… from gs://fc-…/…). Use when Cromwell
-     # localizes File paths and auto-detection from gs:// no longer applies.
+     # localizes File paths and auto-detection from gs:// no longer applies; otherwise it
+     # is detected from the Terra workspace this run is launched from.
      String? workspace_bucket
+
+     File amplicon_info
+     File reference
+
+     # Terra workspace whose data table is updated. Detected from the workspace this
+     # run is launched from when omitted.
+     String? billing_project
+     String? workspace_name
+
+     # Terra data table the resmarker columns are written to. Detected from the type of
+     # data this run was launched on (the submission's root entity) when omitted.
+     String? sample_table
    }
 
    String outdir_sanitized = sub(outdir, "^[A-Za-z0-9_-]+$", "MATCH")
@@ -55,11 +69,43 @@ workflow plasmodiumdrugres {
      }
    }
 
+   # Terra workspace identifiers default to the workspace this run was launched from.
+   if (!defined(billing_project) || !defined(workspace_name) || !defined(sample_table) || !defined(workspace_bucket)) {
+     call get_terra_env_info_t.get_terra_env_info as t_000_terra_env {}
+
+     if ((!defined(billing_project) || !defined(workspace_name) || !defined(sample_table)) && !t_000_terra_env.is_running_on_terra) {
+       call fail_t.fail as terra_env_check_fail {
+         input:
+           message = "ERROR: 'billing_project', 'workspace_name' and/or 'sample_table' was not provided, and this run is not on Terra so they cannot be detected. Provide them explicitly."
+       }
+     }
+
+     # The data table is the submission's root entity, so a run launched from file paths
+     # rather than from a data table has nothing to detect.
+     if (!defined(sample_table) && t_000_terra_env.is_running_on_terra && t_000_terra_env.sample_table == "") {
+       call fail_t.fail as sample_table_check_fail {
+         input:
+           message = "ERROR: 'sample_table' was not provided and this submission has no root entity to infer it from (it was most likely launched with inputs defined by file paths rather than from a data table). Provide 'sample_table'."
+       }
+     }
+   }
+
+   call make_panel_bed.make_panel_bed {
+        input:
+        amplicon_info_tsv = amplicon_info,
+        reference_fasta = reference
+   }
+
+    call convert_allele_table.convert_allele_table {
+        input:
+            allele_table_tsv = filtered_allele_data
+    }
+
    call pipeline_initialisation_wf.pipeline_initialisation as t_001_init {
      input:
        pmo = pmo,
-       allele_table = allele_table,
-       panel_info_bed = panel_info_bed,
+       allele_table = convert_allele_table.converted_allele_table,
+       panel_info_bed = make_panel_bed.panel_bed,
        population_assignment = population_assignment,
        pmo_population_fields = pmo_population_fields,
        pmo_population_separator = pmo_population_separator,
@@ -169,8 +215,11 @@ workflow plasmodiumdrugres {
    String ml_summary_path_str = t_merge_concat.ml_summary
    String inferred_fc_bucket = sub(ml_summary_path_str, "^gs://(fc-[^/]+)/.*$", "$1")
    Boolean fc_inferred_from_gs_uri = inferred_fc_bucket != ml_summary_path_str
-   Boolean move_use_gcs = defined(workspace_bucket) || fc_inferred_from_gs_uri
-   String move_fc_bucket = if defined(workspace_bucket) then select_first([workspace_bucket]) else inferred_fc_bucket
+   String detected_fc_bucket = select_first([t_000_terra_env.bucket_name, ""])
+   Boolean move_use_gcs = defined(workspace_bucket) || fc_inferred_from_gs_uri || detected_fc_bucket != ""
+   String move_fc_bucket = if defined(workspace_bucket) then select_first([workspace_bucket])
+                           else if fc_inferred_from_gs_uri then inferred_fc_bucket
+                           else detected_fc_bucket
 
    call move_outputs_t.move_outputs as t_move_outputs {
      input:
@@ -185,6 +234,14 @@ workflow plasmodiumdrugres {
        use_gcs_staging = move_use_gcs,
        fc_workspace_bucket = move_fc_bucket
    }
+
+   call resmarkers_to_terra.resmarkers_to_terra as resmarkers_to_terra {
+   input:
+      collapsed_amino_acid_calls = t_002_translate_loci.translate_loci_of_interest_output_collapsed_o,
+      billing_project = select_first([billing_project, t_000_terra_env.workspace_namespace]),
+      workspace_name = select_first([workspace_name, t_000_terra_env.workspace_name]),
+      sample_table = select_first([sample_table, t_000_terra_env.sample_table])
+     }
 
    output {
      String ml_summary = t_move_outputs.ml_summary_uri

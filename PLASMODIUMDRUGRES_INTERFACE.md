@@ -11,21 +11,20 @@ This document defines the **user-facing inputs and outputs** for the WDL impleme
 
 ## Inputs
 
-### Required: choose exactly one input mode
-
-Provide **exactly one** of:
+### Required
 
 - **`pmo`** (`File`): PMO JSON file.
-- **`allele_table`** (`File`): TSV/CSV containing microhaplotypes. When using this mode, `panel_info_bed` is also required.
+- **`filtered_allele_data`** (`File`): TSV/CSV containing microhaplotypes.
+- **`amplicon_info`** (`File`): Amplicon info TSV. Requires the following headers (`target_name`, `chrom`, 
+  `insert_start`, and `insert_end`.) 
+- **`reference`** (`File`): Reference FASTA of insert sequences, one record per target_name
+- **`billing_project`** (`String?`): Terra billing project of the workspace to update (e.g. `my-billing-project`). Used by the final `resmarkers_to_terra` step. Optional: when omitted it is detected from the Terra workspace this run was launched from.
+- **`workspace_name`** (`String?`): Name of the Terra workspace whose data table is updated (the workspace name only, not the `billing_project/workspace_name` pair). Used by the final `resmarkers_to_terra` step. Optional: when omitted it is detected from the Terra workspace this run was launched from.
 
 ### Required files
 
 - **`loci_of_interest_bed`** (`File`): BED of loci of interest (single-locus estimates are computed at these loci).
 - **`loci_groups`** (`File`): TSV/CSV defining multi-locus groups (multi-locus estimates are computed for these groups).
-
-### Required iff using `allele_table`
-
-- **`panel_info_bed`** (`File`): BED defining panel target coordinates.
 
 ### Optional grouping / population splitting
 
@@ -83,7 +82,7 @@ To mimic Nextflow’s `outdir` organization (even though Terra does not require 
 
 On **Terra**, the workflow exposes exactly **seven** outputs as **`String` URIs** from the staging step (same idea as `mad4hatter-wdl` `move_outputs`). When Cromwell sees a `gs://fc-…/…` path for the merged `ml_summary`, files are copied with **`gcloud`** to **`gs://fc-…/<outdir>/<timestamp>/`** using their original basenames. On **local Cromwell** (paths like `/Users/…` or `tests/input/…`), the same task uses **`cp`** into **`<execution_dir>/<outdir>/<timestamp>/`** and outputs absolute local paths instead.
 
-Optional input **`workspace_bucket`** (`String?`): set to the workspace bucket id (e.g. `fc-15e572f9-33a3-4a1e-8534-099df773bfbf`, no `gs://` prefix) if your backend localizes files before WDL evaluates paths and automatic `gs://fc-…` detection fails—then GCS staging is forced.
+Optional input **`workspace_bucket`** (`String?`): set to the workspace bucket id (e.g. `fc-15e572f9-33a3-4a1e-8534-099df773bfbf`, no `gs://` prefix) if your backend localizes files before WDL evaluates paths and automatic `gs://fc-…` detection fails—then GCS staging is forced. If it is omitted and `gs://fc-…` detection fails, the bucket of the Terra workspace this run was launched from is used, and GCS staging is forced; on a non-Terra backend neither applies and the task stages locally.
 
 `outdir` must be alphanumeric plus `_` or `-` only (validated at workflow start).
 
@@ -96,6 +95,15 @@ Workflow output names (each value is a `gs://…` path to the file):
 - **`collapsed_amino_acid_calls`** → `collapsed_amino_acid_calls.tsv.gz`
 - **`loci_covered_by_target_samples_info`** → `loci_covered_by_target_samples_info.tsv`
 - **`loci_of_interest_for_target_for_microhap`** → `loci_of_interest_for_target_for_microhap.tsv.gz`
+
+### Terra data table update
+
+As its last step, the workflow runs the `resmarkers_to_terra` task (`python/resmarkers_to_terra.py`). It takes the collapsed amino acid calls from `translate_loci_of_interest` and pivots them to one row per `specimen_name`, then upserts the rows into the data table named by **`sample_table`** in the workspace given by **`billing_project`** / **`workspace_name`** — or, when those are omitted, the table and workspace the run was launched from. `sample_table` is detected from the submission's root entity, so a run launched on a `sample_set` writes to `sample`, and one launched on a `specimen_set` writes to `specimen`.
+
+- **`<sample_table>_id`** (e.g. `sample_id`) is the unique `specimen_name` from the collapsed calls. Terra requires a table's row id column to be named after the table, so this follows `sample_table` automatically.
+- One column per gene/position is added, named **`resmarker_<gene>_<aa_position>`** (e.g. `resmarker_dhfr-ts_164`), holding the `aa` value. If a specimen has several different `aa` values at the same gene/position (a mixed call), the distinct values are sorted and joined with `/` (e.g. `F/Y`). Specimens with no call at a position have that attribute unset.
+- The existing table is **not** deleted: rows with a matching row id are updated and other rows and columns are left unchanged.
+- This step produces no workflow output; the same table is also written to `sample_resmarkers.tsv` in the task's execution directory.
 
 Per-population merge artifacts and intermediate `translated_loci/` paths are still computed inside the run but are **not** listed as workflow outputs; use the staged URIs above for downloads and downstream tooling.
 
